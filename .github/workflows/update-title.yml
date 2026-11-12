@@ -1,0 +1,45 @@
+name: Update video title
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # каждые 10 минут (GitHub иногда запускает с опозданием)
+  workflow_dispatch:          # кнопка ручного запуска во вкладке Actions
+
+permissions:
+  contents: write             # нужно только для ежемесячного keepalive-коммита
+
+concurrency:
+  group: update-title
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Update title
+        run: python views_title.py --once
+        env:
+          YT_TOKEN: ${{ secrets.YT_TOKEN }}
+
+      # GitHub отключает расписание в публичных репозиториях после 60 дней без активности.
+      # Раз в ~30 дней делаем пустой коммит, чтобы расписание работало вечно.
+      - name: Keepalive
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $((now - last)) -gt 2592000 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "keepalive"
+            git push
+          fi
