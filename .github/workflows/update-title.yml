@@ -2,12 +2,13 @@ name: Update video title
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # заголовок каждые 10 минут (GitHub иногда запускает с опозданием)
-    - cron: "5 * * * *"      # раз в час (в :05) — заголовок + превью
+    # Каждые 15 минут: заголовок + превью. Квота: 96 запусков x 101 ед. = 9 696 из 10 000 в сутки.
+    # Минуты сдвинуты с :00 — в начале часа у GitHub пиковая нагрузка и задержки.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:          # кнопка ручного запуска во вкладке Actions
     inputs:
       thumbnail:
-        description: "Обновить и превью"
+        description: "Перерисовать превью, даже если число не изменилось"
         type: boolean
         default: false
 
@@ -23,7 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      DO_THUMB: ${{ github.event.schedule == '5 * * * *' || inputs.thumbnail == true }}
+      DO_THUMB: "true"
+      FORCE_THUMB: ${{ inputs.thumbnail == true }}
     steps:
       - uses: actions/checkout@v4
 
@@ -40,10 +42,10 @@ jobs:
 
       - name: Update title (and thumbnail)
         run: |
-          if [ "$DO_THUMB" = "true" ]; then
-            python views_title.py --once --thumbnail
+          if [ "$FORCE_THUMB" = "true" ]; then
+            python views_title.py --once --thumbnail --force-thumbnail
           else
-            python views_title.py --once
+            python views_title.py --once --thumbnail
           fi
         env:
           YT_TOKEN: ${{ secrets.YT_TOKEN }}

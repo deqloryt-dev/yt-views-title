@@ -71,7 +71,7 @@ def update_title(yt, views, snippet):
     new_title = TITLE_TEMPLATE.format(views=f"{views:,}")
     if snippet["title"] == new_title:
         log("Без изменений:", new_title)
-        return
+        return False
 
     # В update нужно передать snippet целиком, иначе описание и теги сотрутся
     new_snippet = {
@@ -85,6 +85,7 @@ def update_title(yt, views, snippet):
 
     yt.videos().update(part="snippet", body={"id": VIDEO_ID, "snippet": new_snippet}).execute()
     log("Обновлено:", new_title)
+    return True
 
 
 def find_font():
@@ -135,7 +136,8 @@ def update_thumbnail(yt, views):
 
 if __name__ == "__main__":
     # python views_title.py --once              -> одно обновление заголовка и выход
-    # python views_title.py --once --thumbnail  -> заголовок + превью
+    # python views_title.py --once --thumbnail  -> заголовок + превью (превью — только если число изменилось)
+    # python views_title.py --once --thumbnail --force-thumbnail -> превью в любом случае
     # python views_title.py --render 1234       -> только нарисовать thumbnail.png для проверки
     if "--render" in sys.argv:
         n = int(sys.argv[sys.argv.index("--render") + 1])
@@ -150,12 +152,14 @@ if __name__ == "__main__":
         except Exception as e:
             log("Ошибка:", repr(e))
             sys.exit(1)
+        changed = False
         try:
-            update_title(yt, views, snippet)
+            changed = update_title(yt, views, snippet)
         except Exception as e:
             log("Ошибка заголовка:", repr(e))
             failed = True
-        if "--thumbnail" in sys.argv:
+        # Превью меняем вместе с заголовком: если число не изменилось, не тратим 50 единиц квоты
+        if "--thumbnail" in sys.argv and (changed or "--force-thumbnail" in sys.argv):
             try:
                 update_thumbnail(yt, views)
             except Exception as e:
