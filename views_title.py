@@ -28,7 +28,7 @@ def log(*parts):
 
 def get_youtube(interactive=True):
     # В облаке (GitHub Actions) токен приходит из секрета через переменную окружения YT_TOKEN
-    env_token = os.environ.get("YT_TOKEN")
+    env_token = os.environ.get("YT_TOKEN", "").lstrip("﻿").strip()
     if env_token:
         creds = Credentials.from_authorized_user_info(json.loads(env_token), SCOPES)
         if not creds.valid:
