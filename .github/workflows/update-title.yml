@@ -2,8 +2,14 @@ name: Update video title
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # каждые 10 минут (GitHub иногда запускает с опозданием)
+    - cron: "*/10 * * * *"   # заголовок каждые 10 минут (GitHub иногда запускает с опозданием)
+    - cron: "5 * * * *"      # раз в час (в :05) — заголовок + превью
   workflow_dispatch:          # кнопка ручного запуска во вкладке Actions
+    inputs:
+      thumbnail:
+        description: "Обновить и превью"
+        type: boolean
+        default: false
 
 permissions:
   contents: write             # нужно только для ежемесячного keepalive-коммита
@@ -16,6 +22,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      DO_THUMB: ${{ github.event.schedule == '5 * * * *' || inputs.thumbnail == true }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +34,28 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Update title
-        run: python views_title.py --once
+      - name: Install font for thumbnail
+        if: env.DO_THUMB == 'true'
+        run: sudo apt-get install -y -qq fonts-ibm-plex > /dev/null
+
+      - name: Update title (and thumbnail)
+        run: |
+          if [ "$DO_THUMB" = "true" ]; then
+            python views_title.py --once --thumbnail
+          else
+            python views_title.py --once
+          fi
         env:
           YT_TOKEN: ${{ secrets.YT_TOKEN }}
+
+      - name: Save thumbnail for viewing
+        if: env.DO_THUMB == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thumbnail
+          path: thumbnail.png
+          retention-days: 3
+          if-no-files-found: ignore
 
       # GitHub отключает расписание в публичных репозиториях после 60 дней без активности.
       # Раз в ~30 дней делаем пустой коммит, чтобы расписание работало вечно.

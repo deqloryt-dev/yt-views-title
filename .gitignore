@@ -4,4 +4,5 @@ token.json
 
 # Локальный мусор
 *.log
+thumbnail.png
 __pycache__/
