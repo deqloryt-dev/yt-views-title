@@ -38,7 +38,7 @@ jobs:
 
       - name: Install font for thumbnail
         if: env.DO_THUMB == 'true'
-        run: sudo apt-get install -y -qq fonts-ibm-plex > /dev/null
+        run: fc-list | grep -q LiberationSans-Regular || sudo apt-get install -y -qq fonts-liberation > /dev/null
 
       - name: Update title (and thumbnail)
         run: |

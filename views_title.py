@@ -89,12 +89,12 @@ def update_title(yt, views, snippet):
 
 
 def find_font():
-    # IBM Plex Sans как на исходном превью; в облаке ставится пакетом fonts-ibm-plex
+    # Arial: в облаке — Liberation Sans (бесплатная копия Arial, пакет fonts-liberation), на Windows — сам Arial
     patterns = [
-        "/usr/share/fonts/**/IBMPlexSans-Regular.*",
         os.path.join(HERE, "fonts", "*.[ot]tf"),
-        "/usr/share/fonts/**/DejaVuSans.ttf",
+        "/usr/share/fonts/**/LiberationSans-Regular.ttf",
         "C:/Windows/Fonts/arial.ttf",
+        "/usr/share/fonts/**/DejaVuSans.ttf",
     ]
     for p in patterns:
         found = glob.glob(p, recursive=True)
