@@ -1,11 +1,10 @@
 name: Update video title
 
 on:
-  schedule:
-    # Каждые 15 минут: заголовок + превью. Квота: 96 запусков x 101 ед. = 9 696 из 10 000 в сутки.
-    # Минуты сдвинуты с :00 — в начале часа у GitHub пиковая нагрузка и задержки.
-    - cron: "7,22,37,52 * * * *"
-  workflow_dispatch:          # кнопка ручного запуска во вкладке Actions
+  # Запускается извне: cron-job.org каждые 15 минут вызывает API workflow_dispatch
+  # (встроенное расписание GitHub работало с большими задержками).
+  # Квота YouTube: 96 запусков x 101 ед. = 9 696 из 10 000 в сутки.
+  workflow_dispatch:          # и кнопка ручного запуска во вкладке Actions
     inputs:
       thumbnail:
         description: "Перерисовать превью, даже если число не изменилось"
@@ -13,7 +12,7 @@ on:
         default: false
 
 permissions:
-  contents: write             # нужно только для ежемесячного keepalive-коммита
+  contents: read
 
 concurrency:
   group: update-title
@@ -58,16 +57,3 @@ jobs:
           path: thumbnail.png
           retention-days: 3
           if-no-files-found: ignore
-
-      # GitHub отключает расписание в публичных репозиториях после 60 дней без активности.
-      # Раз в ~30 дней делаем пустой коммит, чтобы расписание работало вечно.
-      - name: Keepalive
-        run: |
-          last=$(git log -1 --format=%ct)
-          now=$(date +%s)
-          if [ $((now - last)) -gt 2592000 ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit --allow-empty -m "keepalive"
-            git push
-          fi
